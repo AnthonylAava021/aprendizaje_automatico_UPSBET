@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>UPSBet — Predicción de Partidos</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <!-- Fondo -->
+    <div class="bg"></div>
+    <div class="bg-gradient"></div>
+
+    <header class="wrap header">
+      <h1 class="brand">UPS<span class="brand-accent">BET</span></h1>
+      <div class="model-pill">Modelo: <strong>ML Classifier</strong> <span class="badge on">ON</span></div>
+    </header>
+
+    <main class="wrap">
+      <section class="card">
+        <div class="ribbon"></div>
+
+        <div class="grid">
+          <!-- LOCAL -->
+          <div class="side">
+            <div class="logo-wrap">
+              <img id="homeLogo" class="logo" src="" alt="Logo local" />
+            </div>
+            <div class="side-meta">
+              <span class="side-label">Local</span>
+              <select id="homeSelect" class="team-select" aria-label="Seleccionar equipo local"></select>
+            </div>
+          </div>
+
+          <!-- CENTRO -->
+          <div class="middle">
+            <button id="swapBtn" class="btn ghost" title="Intercambiar local/visita">
+              <svg class="i" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M7 7h8.586L13.293 4.707a1 1 0 111.414-1.414l5 5a1 1 0 010 1.414l-5 5a1 1 0 11-1.414-1.414L15.586 9H7a1 1 0 110-2z"></path>
+                <path d="M17 17H8.414l2.293 2.293a1 1 0 11-1.414 1.414l-5-5a1 1 0 010-1.414l5-5a1 1 0 111.414 1.414L8.414 15H17a1 1 0 110 2z"></path>
+              </svg>
+              Intercambiar
+            </button>
+
+            <div class="vs">VS</div>
+
+            <button id="predictBtn" class="btn primary">Predecir</button>
+          </div>
+
+          <!-- VISITA -->
+          <div class="side right">
+            <div class="logo-wrap">
+              <img id="awayLogo" class="logo" src="" alt="Logo visita" />
+            </div>
+            <div class="side-meta right">
+              <span class="side-label">Visita</span>
+              <select id="awaySelect" class="team-select" aria-label="Seleccionar equipo visita"></select>
+            </div>
+          </div>
+        </div>
+
+        <!-- RESULTADOS -->
+        <div id="results" class="results">
+          <div class="bars">
+            <div class="bar">
+              <div class="bar-top">
+                <span id="lblHome">Gana Local</span>
+                <span class="val" id="pctHome">—</span>
+              </div>
+              <div class="track"><div id="barHome" class="fill"></div></div>
+            </div>
+
+            <div class="bar">
+              <div class="bar-top">
+                <span>Empate</span>
+                <span class="val" id="pctDraw">—</span>
+              </div>
+              <div class="track"><div id="barDraw" class="fill"></div></div>
+            </div>
+
+            <div class="bar">
+              <div class="bar-top">
+                <span id="lblAway">Gana Visita</span>
+                <span class="val" id="pctAway">—</span>
+              </div>
+              <div class="track"><div id="barAway" class="fill"></div></div>
+            </div>
+          </div>
+
+          <div class="cards">
+            <div class="mini-card">
+              <div class="mini-title">Marcador sugerido</div>
+              <div id="score" class="mini-value">—</div>
+            </div>
+
+            <!-- Córners -->
+            <div class="mini-card dual">
+              <div class="mini-title">Córners</div>
+              <div class="dual-grid">
+                <div class="dual-item">
+                  <div class="label">Local</div>
+                  <div id="cornersHome" class="num">—</div>
+                </div>
+                <div class="dual-item">
+                  <div class="label">Visita</div>
+                  <div id="cornersAway" class="num">—</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tarjetas -->
+            <div class="mini-card dual">
+              <div class="mini-title">Tarjetas</div>
+              <div class="dual-grid">
+                <div class="dual-item">
+                  <div class="label">Local</div>
+                  <div id="cardsHome" class="num">—</div>
+                </div>
+                <div class="dual-item">
+                  <div class="label">Visita</div>
+                  <div id="cardsAway" class="num">—</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="notice" class="notice hide"></div>
+        </div>
+      </section>
+
+      <p class="legal">* Visual de ejemplo. Conecta tu API para resultados reales. Juega con responsabilidad.</p>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>
