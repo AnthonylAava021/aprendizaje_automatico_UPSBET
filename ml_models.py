@@ -1,8 +1,6 @@
 import joblib
 import numpy as np
 import pandas as pd
-from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
-from sklearn.preprocessing import StandardScaler
 import os
 from models import db, Partido, Equipo
 from datetime import datetime
@@ -11,56 +9,75 @@ from custom_models import safe_load_model
 
 class MLPredictor:
     def __init__(self):
+        # Modelos de córners
         self.corners_model = None
         self.corners_scaler = None
-        self.cards_model = None
-        self.result_model = None
+        
+        # Modelos de tarjetas rojas
+        self.red_cards_cls_local = None
+        self.red_cards_cls_visitante = None
+        self.red_cards_reg_local = None
+        self.red_cards_reg_visitante = None
+        self.red_thresholds = None
+        
+        # Modelo de tarjetas amarillas
+        self.yellow_cards_model = None
+        
+        # Modelo de marcador
+        self.score_model = None
+        
         self.feature_generator = FeatureGenerator()
         self.load_models()
     
     def load_models(self):
         """Carga los modelos entrenados desde archivos"""
         try:
-            # Cargar modelo de córners (usa escalador)
+            # Cargar modelo de córners
             if os.path.exists('app/models/prediccion_corners_totales.pkl'):
                 self.corners_model = safe_load_model('app/models/prediccion_corners_totales.pkl')
-                if self.corners_model:
-                    print("✅ Modelo de córners cargado correctamente")
+                print("✅ Modelo de córners cargado correctamente")
             
             if os.path.exists('app/models/escalador_corners.pkl'):
                 self.corners_scaler = joblib.load('app/models/escalador_corners.pkl')
                 print("✅ Escalador de córners cargado correctamente")
             
-            # Cargar modelo de tarjetas
+            # Cargar modelos de tarjetas rojas
+            if os.path.exists('app/models/modelo_rojas_cls_local.pkl'):
+                self.red_cards_cls_local = safe_load_model('app/models/modelo_rojas_cls_local.pkl')
+                print("✅ Modelo de tarjetas rojas clasificación local cargado")
+            
+            if os.path.exists('app/models/modelo_rojas_cls_visitante.pkl'):
+                self.red_cards_cls_visitante = safe_load_model('app/models/modelo_rojas_cls_visitante.pkl')
+                print("✅ Modelo de tarjetas rojas clasificación visitante cargado")
+            
+            if os.path.exists('app/models/modelo_rojas_reg_local.pkl'):
+                self.red_cards_reg_local = safe_load_model('app/models/modelo_rojas_reg_local.pkl')
+                print("✅ Modelo de tarjetas rojas regresión local cargado")
+            
+            if os.path.exists('app/models/modelo_rojas_reg_visitante.pkl'):
+                self.red_cards_reg_visitante = safe_load_model('app/models/modelo_rojas_reg_visitante.pkl')
+                print("✅ Modelo de tarjetas rojas regresión visitante cargado")
+            
+            if os.path.exists('app/models/umbrales_rojas.pkl'):
+                self.red_thresholds = joblib.load('app/models/umbrales_rojas.pkl')
+                print("✅ Umbrales de tarjetas rojas cargados")
+            
+            # Cargar modelo de tarjetas amarillas
             if os.path.exists('app/models/modelo_amarillas.pkl'):
-                try:
-                    self.cards_model = joblib.load('app/models/modelo_amarillas.pkl')
-                    print("✅ Modelo de tarjetas amarillas cargado correctamente")
-                except Exception as e:
-                    print(f"⚠️  Error cargando modelo de tarjetas: {e}")
-                    self.cards_model = None
+                self.yellow_cards_model = safe_load_model('app/models/modelo_amarillas.pkl')
+                print("✅ Modelo de tarjetas amarillas cargado correctamente")
             
             # Cargar modelo de marcador
             if os.path.exists('app/models/modelo_marcador.pkl'):
-                self.result_model = safe_load_model('app/models/modelo_marcador.pkl')
-                if self.result_model:
-                    print("✅ Modelo de marcador cargado correctamente")
+                self.score_model = safe_load_model('app/models/modelo_marcador.pkl')
+                print("✅ Modelo de marcador cargado correctamente")
                 
         except Exception as e:
             print(f"Error cargando modelos: {e}")
-            # Si no hay modelos, crear fallbacks
-            self.create_fallback_models()
-    
-    def create_fallback_models(self):
-        """Crea modelos básicos como fallback"""
-        self.corners_model = RandomForestRegressor(n_estimators=100, random_state=42)
-        self.corners_scaler = StandardScaler()
-        self.cards_model = RandomForestRegressor(n_estimators=100, random_state=42)
-        self.result_model = RandomForestClassifier(n_estimators=100, random_state=42)
     
     def get_historical_data(self, home_code, away_code):
         """
-        Busca datos históricos entre dos equipos
+        Busca datos históricos entre dos equipos usando equipo_local_id y equipo_visitante_id
         
         Args:
             home_code (int): Código del equipo local
@@ -75,6 +92,7 @@ class MLPredictor:
             away_team = Equipo.query.filter_by(codigo=away_code).first()
             
             if not home_team or not away_team:
+                print(f"No se encontraron equipos con códigos {home_code} y {away_code}")
                 return None
             
             # Buscar el último partido entre estos equipos (local vs visita)
@@ -87,13 +105,18 @@ class MLPredictor:
                 return {
                     'home_code': home_code,
                     'away_code': away_code,
+                    'home_id': home_team.id,
+                    'away_id': away_team.id,
                     'goles_local': last_match.goles_local,
                     'goles_visita': last_match.goles_visita,
                     'corners_local': last_match.corners_local,
                     'corners_visita': last_match.corners_visita,
-                    'tarjetas_local': last_match.tarjetas_amarillas_local + last_match.tarjetas_rojas_local,
-                    'tarjetas_visita': last_match.tarjetas_amarillas_visita + last_match.tarjetas_rojas_visita,
-                    'resultado': last_match.resultado
+                    'tarjetas_amarillas_local': last_match.tarjetas_amarillas_local,
+                    'tarjetas_amarillas_visita': last_match.tarjetas_amarillas_visita,
+                    'tarjetas_rojas_local': last_match.tarjetas_rojas_local,
+                    'tarjetas_rojas_visita': last_match.tarjetas_rojas_visita,
+                    'resultado': last_match.resultado,
+                    'fecha': last_match.fecha
                 }
             
             # Si no hay datos, buscar con equipos invertidos
@@ -106,16 +129,22 @@ class MLPredictor:
                 return {
                     'home_code': home_code,
                     'away_code': away_code,
+                    'home_id': home_team.id,
+                    'away_id': away_team.id,
                     'goles_local': last_match_inverted.goles_visita,  # Invertir
                     'goles_visita': last_match_inverted.goles_local,  # Invertir
                     'corners_local': last_match_inverted.corners_visita,  # Invertir
                     'corners_visita': last_match_inverted.corners_local,  # Invertir
-                    'tarjetas_local': last_match_inverted.tarjetas_amarillas_visita + last_match_inverted.tarjetas_rojas_visita,  # Invertir
-                    'tarjetas_visita': last_match_inverted.tarjetas_amarillas_local + last_match_inverted.tarjetas_rojas_local,  # Invertir
-                    'resultado': self.invert_result(last_match_inverted.resultado)
+                    'tarjetas_amarillas_local': last_match_inverted.tarjetas_amarillas_visita,  # Invertir
+                    'tarjetas_amarillas_visita': last_match_inverted.tarjetas_amarillas_local,  # Invertir
+                    'tarjetas_rojas_local': last_match_inverted.tarjetas_rojas_visita,  # Invertir
+                    'tarjetas_rojas_visita': last_match_inverted.tarjetas_rojas_local,  # Invertir
+                    'resultado': self.invert_result(last_match_inverted.resultado),
+                    'fecha': last_match_inverted.fecha
                 }
             
-            # Si no hay datos históricos, retornar valores por defecto
+            # Si no hay datos históricos, retornar None
+            print(f"No se encontraron datos históricos entre equipos {home_code} y {away_code}")
             return None
             
         except Exception as e:
@@ -133,7 +162,7 @@ class MLPredictor:
     
     def predict_match(self, home_code, away_code):
         """
-        Predice el resultado de un partido usando datos históricos
+        Predice el resultado de un partido usando los modelos pre-entrenados
         
         Args:
             home_code (int): Código del equipo local
@@ -158,14 +187,17 @@ class MLPredictor:
             return self.get_default_prediction()
     
     def predict_with_historical_data(self, historical_data):
-        """Predice usando datos históricos"""
+        """Predice usando datos históricos y modelos pre-entrenados"""
         # Predicción de córners usando el modelo específico
         corners_prediction = self.predict_corners(historical_data)
         
-        # Predicción de tarjetas
-        cards_prediction = self.predict_cards(historical_data)
+        # Predicción de tarjetas amarillas
+        yellow_cards_prediction = self.predict_yellow_cards(historical_data)
         
-        # Predicción de resultado basada en goles históricos
+        # Predicción de tarjetas rojas
+        red_cards_prediction = self.predict_red_cards(historical_data)
+        
+        # Predicción de resultado
         result_prediction = self.predict_result(historical_data)
         
         return {
@@ -180,9 +212,13 @@ class MLPredictor:
                 'home': corners_prediction['home'],
                 'away': corners_prediction['away']
             },
-            'cards': {
-                'home': cards_prediction['home'],
-                'away': cards_prediction['away']
+            'yellow_cards': {
+                'home': yellow_cards_prediction['home'],
+                'away': yellow_cards_prediction['away']
+            },
+            'red_cards': {
+                'home': red_cards_prediction['home'],
+                'away': red_cards_prediction['away']
             }
         }
     
@@ -225,20 +261,20 @@ class MLPredictor:
             print(f"Error prediciendo córners: {e}")
             return {'home': 5, 'away': 4}
     
-    def predict_cards(self, historical_data):
-        """Predice tarjetas usando el modelo entrenado"""
+    def predict_yellow_cards(self, historical_data):
+        """Predice tarjetas amarillas usando el modelo entrenado"""
         try:
-            if self.cards_model:
-                # Crear features para el modelo de tarjetas
+            if self.yellow_cards_model:
+                # Crear features para el modelo de tarjetas amarillas
                 features = np.array([[
-                    historical_data['tarjetas_local'],
-                    historical_data['tarjetas_visita'],
+                    historical_data['tarjetas_amarillas_local'],
+                    historical_data['tarjetas_amarillas_visita'],
                     historical_data['goles_local'],
                     historical_data['goles_visita']
                 ]])
                 
                 # Predicción
-                prediction = self.cards_model.predict(features)[0]
+                prediction = self.yellow_cards_model.predict(features)[0]
                 
                 # Distribuir la predicción entre local y visita
                 cards_home = max(1, int(prediction * 0.5))
@@ -247,21 +283,65 @@ class MLPredictor:
                 return {'home': cards_home, 'away': cards_away}
             else:
                 # Fallback basado en datos históricos con variación
-                cards_home = max(1, historical_data['tarjetas_local'] + np.random.randint(-1, 2))
-                cards_away = max(1, historical_data['tarjetas_visita'] + np.random.randint(-1, 2))
+                cards_home = max(1, historical_data['tarjetas_amarillas_local'] + np.random.randint(-1, 2))
+                cards_away = max(1, historical_data['tarjetas_amarillas_visita'] + np.random.randint(-1, 2))
                 
                 return {'home': cards_home, 'away': cards_away}
         except Exception as e:
-            print(f"Error prediciendo tarjetas: {e}")
+            print(f"Error prediciendo tarjetas amarillas: {e}")
             return {'home': 2, 'away': 2}
+    
+    def predict_red_cards(self, historical_data):
+        """Predice tarjetas rojas usando los modelos específicos"""
+        try:
+            red_cards_home = 0
+            red_cards_away = 0
+            
+            # Predicción para equipo local
+            if self.red_cards_cls_local and self.red_cards_reg_local:
+                # Features para tarjetas rojas
+                features = np.array([[
+                    historical_data['tarjetas_rojas_local'],
+                    historical_data['tarjetas_amarillas_local'],
+                    historical_data['goles_local'],
+                    historical_data['goles_visita']
+                ]])
+                
+                # Clasificación (si habrá tarjeta roja)
+                cls_pred = self.red_cards_cls_local.predict_proba(features)[0]
+                will_have_red = cls_pred[1] > 0.5  # Probabilidad de tarjeta roja
+                
+                if will_have_red:
+                    # Regresión (cuántas tarjetas rojas)
+                    reg_pred = self.red_cards_reg_local.predict(features)[0]
+                    red_cards_home = max(0, int(reg_pred))
+            
+            # Predicción para equipo visitante
+            if self.red_cards_cls_visitante and self.red_cards_reg_visitante:
+                features = np.array([[
+                    historical_data['tarjetas_rojas_visita'],
+                    historical_data['tarjetas_amarillas_visita'],
+                    historical_data['goles_visita'],
+                    historical_data['goles_local']
+                ]])
+                
+                cls_pred = self.red_cards_cls_visitante.predict_proba(features)[0]
+                will_have_red = cls_pred[1] > 0.5
+                
+                if will_have_red:
+                    reg_pred = self.red_cards_reg_visitante.predict(features)[0]
+                    red_cards_away = max(0, int(reg_pred))
+            
+            return {'home': red_cards_home, 'away': red_cards_away}
+            
+        except Exception as e:
+            print(f"Error prediciendo tarjetas rojas: {e}")
+            return {'home': 0, 'away': 0}
     
     def predict_result(self, historical_data):
         """Predice resultado del partido usando el modelo entrenado"""
         try:
-            if self.result_model and isinstance(self.result_model, dict) and 'model' in self.result_model:
-                # Usar el modelo dentro del diccionario
-                model = self.result_model['model']
-                
+            if self.score_model:
                 # Generar features para el modelo de marcador (477 features)
                 features = self.feature_generator.generate_score_model_features(
                     historical_data.get('home_code', 0),
@@ -270,7 +350,7 @@ class MLPredictor:
                 )
                 
                 # Predicción de goles
-                score_prediction = model.predict(features)[0]
+                score_prediction = self.score_model.predict(features)[0]
                 
                 # Calcular probabilidades basadas en la predicción
                 if isinstance(score_prediction, (list, np.ndarray)) and len(score_prediction) >= 2:
@@ -353,7 +433,7 @@ class MLPredictor:
             }
     
     def predict_without_historical_data(self, home_code, away_code):
-        """Predice sin datos históricos"""
+        """Predice sin datos históricos usando valores por defecto"""
         # Predicciones por defecto basadas en códigos de equipos
         home_win = 0.4 + (home_code % 10) * 0.01
         away_win = 0.3 + (away_code % 10) * 0.01
@@ -377,9 +457,13 @@ class MLPredictor:
                 'home': np.random.randint(3, 8),
                 'away': np.random.randint(2, 7)
             },
-            'cards': {
+            'yellow_cards': {
                 'home': np.random.randint(1, 4),
                 'away': np.random.randint(1, 4)
+            },
+            'red_cards': {
+                'home': np.random.randint(0, 2),
+                'away': np.random.randint(0, 2)
             }
         }
     
@@ -391,7 +475,8 @@ class MLPredictor:
             'away_win': 0.34,
             'score': {'home': 1, 'away': 1},
             'corners': {'home': 5, 'away': 4},
-            'cards': {'home': 2, 'away': 2}
+            'yellow_cards': {'home': 2, 'away': 2},
+            'red_cards': {'home': 0, 'away': 0}
         }
 
 # Instancia global del predictor

@@ -74,8 +74,7 @@ const pctAway = $("#pctAway");
 const scoreEl = $("#score");
 
 // NUEVOS: elementos para Córners y Tarjetas
-const cornersHomeEl = $("#cornersHome");
-const cornersAwayEl = $("#cornersAway");
+const cornersTotalEl = $("#cornersTotal");
 const cardsHomeEl   = $("#cardsHome");
 const cardsAwayEl   = $("#cardsAway");
 
@@ -216,11 +215,9 @@ function renderResults(res){
   const sA = Math.round(res?.score?.away ?? 1);
   scoreEl.textContent = `${sH} - ${sA}`;
 
-  // Córners (Local/Visita)
-  const cH = Math.round(res?.corners?.home ?? randomInt(2, 9));
-  const cA = Math.round(res?.corners?.away ?? randomInt(2, 9));
-  if (cornersHomeEl) cornersHomeEl.textContent = cH;
-  if (cornersAwayEl) cornersAwayEl.textContent = cA;
+  // Córners totales del partido
+  const cTotal = Math.round(res?.corners_total ?? randomInt(8, 15));
+  if (cornersTotalEl) cornersTotalEl.textContent = cTotal;
 
   // Tarjetas (Local/Visita)
   const yH = Math.round(res?.cards?.home ?? randomInt(1, 5));
@@ -243,7 +240,7 @@ function mockPrediction(){
   if (max === c) score = { home: Math.random() < 0.4 ? 0 : 1, away: 2 };
 
   // mocks para corners y tarjetas
-  const corners = { home: randomInt(3, 10), away: randomInt(2, 9) };
+  const corners_total = randomInt(8, 15);
   const cards   = { home: randomInt(1, 5),  away: randomInt(1, 5) };
 
   return {
@@ -251,7 +248,7 @@ function mockPrediction(){
     draw: b,
     away_win: c,
     score,
-    corners,
+    corners_total,
     cards
   };
 }
