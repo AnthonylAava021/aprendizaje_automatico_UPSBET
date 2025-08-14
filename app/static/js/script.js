@@ -23,33 +23,32 @@ const equipos_dict = {
 // =======================
 //  Configuración de rutas
 // =======================
-// Si tus imágenes están junto a index.html, deja "./".
-// Si las mueves a ./assets/, cambia a "./assets/".
-const ASSETS_BASE = "./img/";
+// Rutas corregidas para que coincidan con la estructura de archivos
+const ASSETS_BASE = "/app/static/";
 const API_ENDPOINT = "/api/predict"; // cambia si tu backend vive en otro lado
 
 // Nombres de archivo EXACTOS (según tu carpeta)
 const NAME_TO_FILE = {
-  "Barcelona SC": "Barcelona_Sporting_Club_Logo.png",
-  "El Nacional": "Nacional.png",
-  "Emelec": "EscudoCSEmelec.png",
-  "LDU de Quito": "Liga_Deportiva_Universitaria_de_Quito.png",
-  "Mushuc Runa SC": "MushucRuna.png",
-  "Independiente del Valle": "Independiente_del_Valle_Logo_2022.png",
-  "CD Tecnico Universitario": "Técnico_Universitario.png",
-  "Delfin": "Delfín_SC_logo.png",
-  "Deportivo Cuenca": "Depcuenca.png",
-  "Aucas": "SD_Aucas_logo.png",
-  "Universidad Catolica": "Ucatólica.png",
-  "CSD Macara": "Macara_6.png",
-  "Orense SC": "Orense_SC_logo.png",
-  "Manta FC": "Manta_F.C.png",
-  "Libertad": "Libertad_FC_Ecuador.png",
-  "Vinotinto": "Vinotinto.png"
+  "Barcelona SC": "img/Barcelona_Sporting_Club_Logo.png",
+  "El Nacional": "img/Nacional.png",
+  "Emelec": "img/EscudoCSEmelec.png",
+  "LDU de Quito": "img/Liga_Deportiva_Universitaria_de_Quito.png",
+  "Mushuc Runa SC": "img/MushucRuna.png",
+  "Independiente del Valle": "img/Independiente_del_Valle_Logo_2022.png",
+  "CD Tecnico Universitario": "img/Técnico_Universitario.png",
+  "Delfin": "img/Delfín_SC_logo.png",
+  "Deportivo Cuenca": "img/Depcuenca.png",
+  "Aucas": "img/SD_Aucas_logo.png",
+  "Universidad Catolica": "img/Ucatólica.png",
+  "CSD Macara": "img/Macara_6.png",
+  "Orense SC": "img/Orense_SC_logo.png",
+  "Manta FC": "img/Manta_F.C.png",
+  "Libertad": "img/Libertad_FC_Ecuador.png",
+  "Vinotinto": "img/Vinotinto.png"
 };
 
 // fondo (tu archivo se llama bg.jpg)
-const BG_FILE = "bg.jpg";
+const BG_FILE = "img/bg.jpg";
 
 // =======================
 //  Helpers UI
@@ -83,7 +82,7 @@ const cardsAwayEl   = $("#cardsAway");
 const notice  = $("#notice");
 
 // fija el fondo sin importar dónde esté
-bgDiv.style.backgroundImage = `url('./img/${BG_FILE}')`;
+bgDiv.style.backgroundImage = `url('${ASSETS_BASE}${BG_FILE}')`;
 
 // opciones por defecto
 const TEAM_NAMES = Object.keys(equipos_dict);
