@@ -17,6 +17,9 @@ def create_app(config_name='default'):
     app.static_folder = 'app/static'
     app.template_folder = 'app/templates'
     
+    # Configurar URL para archivos estáticos
+    app.static_url_path = '/static'
+    
     @app.route('/')
     def index():
         """Página principal"""

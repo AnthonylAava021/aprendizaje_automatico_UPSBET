@@ -24,7 +24,7 @@ const equipos_dict = {
 //  Configuración de rutas
 // =======================
 // Rutas corregidas para que coincidan con la estructura de archivos
-const ASSETS_BASE = "/app/static/";
+const ASSETS_BASE = "/static/";
 const API_ENDPOINT = "/api/predict"; // cambia si tu backend vive en otro lado
 
 // Nombres de archivo EXACTOS (según tu carpeta)
